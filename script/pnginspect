@@ -1,9 +1,9 @@
-#!/home/ben/software/install/bin/perl
+#!/usr/bin/perl
 
 use warnings;
 use strict;
 use Image::PNG::Libpng ':all';
-use Data::Dumper;
+use Data::Dumper qw( Dumper );
 
 # Ok to connect to web?
 
@@ -39,7 +39,7 @@ for my $file (@ARGV) {
 	    if (is_web_uri ($file)) {
 		print "Getting '$file' from web.\n";
 		my $png_data = get ($file);
-		if ($png_data) {
+		if (defined($png_data)) {
 		    $png = read_from_scalar ($png_data);
 		}
 		else {
@@ -58,10 +58,10 @@ for my $file (@ARGV) {
 
     print "Contents of '$file':\n\n";
     my $ihdr = $png->get_IHDR ();
-    for my $k (sort keys %$ihdr) {
+    foreach (sort (keys %$ihdr) ) {
 	# Display key
-	my $dk = $k;
-	$dk = ucfirst ($dk);
+	my $dk = $_;
+	$dk = ucfirst ($_);
 	$dk =~ s/_/ /g;
 	print "$dk: ";
 	if ($k eq 'color_type') {
@@ -86,39 +86,38 @@ for my $file (@ARGV) {
 	print "\n";
     }
     my $valid = $png->get_valid ();
-    for my $key (sort keys %$valid) {
-	if ($valid->{$key}) {
+    foreach (sort (keys %$valid) ) {
+	if ($valid->{$_}) {
 	    print "Valid $key chunk";
-	    if ($key eq 'IDAT' || $key eq 'tIME') {
+	    if ($_ =~ 'IDAT' || $_ =~ 'tIME') {
 		print ".\n";
-
 	    }
-	    elsif ($key eq 'PLTE') {
-		my $plte = $png->get_chunk ($key);
+	    elsif ($_ =~ 'PLTE') {
+		my $plte = $png->get_chunk ($_);
 		printf " containing %d colours as follows (CSS format):\n",
 		       scalar (@$plte);
-		for my $rgb (@$plte) {
-		    printf "#%02X%02X%02X ", $rgb->{red},
-			    $rgb->{green}, $rgb->{blue};
+		foreach(@$plte) {
+		    printf "#%02X%02X%02X ", $_->{red},
+			    $_->{green}, $_->{blue};
 		}
 		print "\n";
 	    }
-	    elsif ($key eq 'tRNS') {
-		my $trns = $png->get_chunk ($key);
+	    elsif ($_ =~ 'tRNS') {
+		my $trns = $png->get_chunk ($_);
 		printf " containing %d values as follows:\n",
 		       scalar (@$trns);
 		my $dtrns = join ", ", @$trns;
 		print "$dtrns\n";
 	    }
 	    else {
-		my $value = $png->get_chunk ($key);
+		my $value = $png->get_chunk ($_);
 		print " as follows:\n";
 		print Dumper ($value);
 	    }
 	}
     }
     my $text = $png->get_text ();
-    if ($text) {
+    if (defined( $text) ) {
 	my $i = 0;
         for my $t (@$text) {
 	    $i++;
@@ -128,7 +127,7 @@ for my $file (@ARGV) {
                 if (! defined $v) {
                     $v = 'undefined';
                 }
-		if ($k eq 'compression') {
+		if ($k =~ 'compression') {
 		    $v = text_compression_name ($v);
 		}
                 print "$k: $v\n";
